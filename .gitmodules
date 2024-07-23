@@ -1,0 +1,3 @@
+[submodule "Projet-Vagrant-Frontend-M1-IBAM"]
+	path = frontend
+	url = https://github.com/simboroyacouba/Projet-Vagrant-Frontend-M1-IBAM.git
