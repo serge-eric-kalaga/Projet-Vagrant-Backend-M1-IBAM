@@ -1,0 +1,46 @@
+# db/Vagrantfile
+
+Vagrant.configure("2") do |config|
+  config.vm.define "database_server" do |vm|
+    vm.vm.box = "ubuntu/focal64"
+  
+    vm.vm.network "private_network", ip: "192.168.0.203"
+    vm.vm.network "forwarded_port", guest: 22, host: 2003, id: "ssh", auto_correct: true
+    vm.vm.network "public_network", ip: "192.168.0.203", bridge: "en1: Wi-Fi (AirPort)"
+  
+    vm.vm.provider "virtualbox" do |vb|
+	  vb.memory = "1024"
+      vb.cpus = 1
+    end
+
+    vm.vm.provision "shell", inline: <<-SHELL
+      # Shell script for provisioning PostgreSQL
+      sudo apt-get update
+      sudo apt-get install -y postgresql
+
+      # Configure PostgreSQL to listen on all addresses
+      sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/12/main/postgresql.conf
+      echo "host all all 0.0.0.0/0 md5" | sudo tee -a /etc/postgresql/12/main/pg_hba.conf
+      sudo systemctl restart postgresql
+
+      # Connecter en tant qu'utilisateur postgres et définir le mot de passe
+      sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+      # Créer un nouvel utilisateur et lui attribuer un mot de passe
+      sudo -u postgres psql -c "CREATE USER admin WITH PASSWORD 'qwerty12345';"
+      sudo -u postgres psql -c "ALTER USER admin WITH SUPERUSER;"
+
+      # Créer une nouvelle base de données et donner l'accès à l'utilisateur
+      sudo -u postgres psql -c "CREATE DATABASE task_list;"
+      sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE task_list TO admin;"
+	
+      sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+      # Modify pg_hba.conf to allow all connections with md5 authentication
+      sudo sh -c "echo 'host all all 0.0.0.0/0 md5' >> /etc/postgresql/12/main/pg_hba.conf"
+	
+	  # Restart PostgreSQL service
+      sudo systemctl restart postgresql
+    
+    SHELL
+  end
+end

@@ -1,0 +1,48 @@
+# app/Vagrantfile
+
+Vagrant.configure("2") do |config|
+  config.vm.define "app_server" do |vm|
+    vm.vm.box = "ubuntu/focal64"
+  
+    vm.vm.network "private_network", ip: "192.168.0.202"
+    vm.vm.network "forwarded_port", guest: 22, host: 2002, id: "ssh", auto_correct: true
+    vm.vm.network "forwarded_port", guest: 80, host: 8080
+    vm.vm.network "forwarded_port", guest: 8080, host: 8081
+    vm.vm.network "forwarded_port", guest: 4200, host: 4200
+    vm.vm.network "public_network", ip: "192.168.0.202", bridge: "en1: Wi-Fi (AirPort)"
+    
+    vm.vm.provider "virtualbox" do |vb|
+	    vb.memory = "6024"
+      vb.cpus = 4 
+    end
+
+    vm.vm.provision "shell", inline: <<-SHELL
+       # Mise à jour des paquets
+      sudo apt update
+
+      # Installation des dépendances nécessaires
+      sudo apt-get install -y curl software-properties-common
+      
+
+      # Installation de Docker
+      sudo apt-get install -y docker.io
+      
+      # Installation de Docker Compose
+      sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      sudo chmod +x /usr/local/bin/docker-compose
+    
+      git clone https://github.com/serge-eric-kalaga/Projet-Vagrant-Backend-M1-IBAM.git
+
+      cd Projet-Vagrant-Backend-M1-IBAM/
+      git submodule update --init --recursive
+      
+      cd frontend/
+      git checkout main
+      git pull
+      cd ..
+
+      sudo docker-compose up --build
+    SHELL
+  end
+end
+     

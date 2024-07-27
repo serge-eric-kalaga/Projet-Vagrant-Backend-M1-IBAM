@@ -1,0 +1,44 @@
+# web/Vagrantfile
+
+Vagrant.configure("2") do |config|
+  config.vm.define "web_server" do |vm|
+    vm.vm.box = "ubuntu/focal64"
+  
+    vm.vm.network "private_network", ip: "192.168.0.201"
+    vm.vm.network "forwarded_port", guest: 22, host: 2001, id: "ssh", auto_correct: true
+    vm.vm.network "forwarded_port", guest: 80, host: 80
+    vm.vm.network "public_network", ip: "192.168.0.201", bridge: "en1: Wi-Fi (AirPort)"
+  
+  
+    vm.vm.provider "virtualbox" do |vb|
+	  vb.memory = "1024"
+      vb.cpus = 1
+    end
+
+    vm.vm.provision "shell", inline: <<-SHELL
+      sudo apt-get update
+      sudo apt-get install -y nginx
+    
+      sudo bash -c 'cat > /etc/nginx/sites-available/default <<EOF
+      server {
+        listen 80;  # Nginx main port (HTTP)
+
+        location / {
+            proxy_pass http://192.168.0.202:4200;  # Redirect to remote-host:8080
+            proxy_set_header Host host;
+            proxy_set_header X-Real-IP remote_addr;
+        }
+
+         location /backend {
+            proxy_pass http://192.168.0.202:8080/docs;  # Redirect to remote-host:8080
+            proxy_set_header Host host;
+            proxy_set_header X-Real-IP remote_addr;
+        }
+      }'
+
+      
+      # Restart Nginx to apply changes
+      sudo systemctl restart nginx
+    SHELL
+  end
+end
