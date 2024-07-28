@@ -10,6 +10,9 @@ Pour cloner le projet et ses sous-modules, utilisez les commandes suivantes :
 
 ```
 git clone https://github.com/serge-eric-kalaga/Projet-Vagrant-Backend-M1-IBAM.git
+```
+ensuite se positionner dans le repertoire du projet et taper la commande ci-apres
+```
 git submodule update --init --recursive
 ```
 
